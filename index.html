@@ -49,14 +49,13 @@
     <div id="prediction">Loading model...</div>
   </div>
 
-  <footer>Built with TensorFlow Lite + Webcam · Hosted on GitHub/Tiiny</footer>
+  <footer>Built with TensorFlow Lite + Webcam · Hosted on Netlify</footer>
 
   <script>
     let model;
 
     async function loadModel() {
-      const modelUrl = 'https://l3al3y.github.io/WEEBO';
-      model = await tflite.loadTFLiteModel(modelUrl);
+      model = await tflite.loadTFLiteModel('model.tflite'); // ✅ relative path
       document.getElementById('prediction').innerText = 'Model loaded. Starting camera...';
     }
 
