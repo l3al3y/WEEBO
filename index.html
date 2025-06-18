@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sign Language Detection</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-tflite"></script>
+</head>
+<body>
+  <h1>Sign Language Detection</h1>
+  <video id="webcam" autoplay playsinline width="640" height="480"></video>
+  <div id="prediction">Loading...</div>
+
+  <script>
+    let model;
+
+    async function loadModel() {
+      model = await tflite.loadTFLiteModel('model.tflite');
+    }
+
+    async function setupCamera() {
+      const webcam = document.getElementById('webcam');
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false
+      });
+      webcam.srcObject = stream;
+      return new Promise((resolve) => {
+        webcam.onloadedmetadata = () => {
+          resolve(webcam);
+        };
+      });
+    }
+
+    async function predictFrame(video) {
+      const inputTensor = tf.browser.fromPixels(video)
+        .resizeBilinear([224, 224])
+        .toFloat()
+        .expandDims(0);
+      const output = model.predict(inputTensor);
+      const result = await output.data();
+      const labelIndex = result.indexOf(Math.max(...result));
+      const label = String.fromCharCode(65 + labelIndex); // A-Z
+      document.getElementById('prediction').innerText = `Prediction: ${label}`;
+      inputTensor.dispose();
+      requestAnimationFrame(() => predictFrame(video));
+    }
+
+    async function main() {
+      await loadModel();
+      const webcam = await setupCamera();
+      predictFrame(webcam);
+    }
+
+    main();
+  </script>
+</body>
+</html>
