@@ -1,62 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Live Sign Language Detection</title>
+  <meta charset="UTF-8">
+  <title>Test Camera + TFLite</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-tflite"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #f4f4f4;
-      margin: 0;
-      padding: 0;
-    }
-    header {
-      background-color: #6200ea;
-      color: white;
-      padding: 1rem;
-      font-size: 1.4rem;
-    }
-    #container {
-      margin-top: 1rem;
-    }
-    video {
-      border-radius: 12px;
-      margin-top: 1rem;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    }
-    #prediction {
-      font-size: 2rem;
-      margin-top: 1rem;
-      font-weight: bold;
-      color: #333;
-    }
-    footer {
-      margin-top: 2rem;
-      font-size: 0.8rem;
-      color: #999;
-    }
-  </style>
 </head>
 <body>
-  <header>🧠 Sign Language Detection (A–Z)</header>
-
-  <div id="container">
-    <video id="webcam" autoplay playsinline muted width="320" height="240"></video>
-    <div id="prediction">Loading model...</div>
-  </div>
-
-  <footer>Built with TensorFlow Lite + Webcam · Hosted on Netlify</footer>
+  <h1>Sign Detection</h1>
+  <video id="webcam" autoplay playsinline muted width="320" height="240"></video>
+  <div id="status">Loading...</div>
 
   <script>
     let model;
 
     async function loadModel() {
-      model = await tflite.loadTFLiteModel('model.tflite'); // ✅ relative path
-      document.getElementById('prediction').innerText = 'Model loaded. Starting camera...';
+      document.getElementById('status').innerText = 'Loading model...';
+      model = await tflite.loadTFLiteModel('model.tflite', {
+        wasmPath: 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-tflite/dist/tfjs-tflite.wasm',
+      });
+      document.getElementById('status').innerText = 'Model loaded!';
     }
 
     async function setupCamera() {
@@ -68,25 +31,15 @@
       });
     }
 
-    async function predictLoop(video) {
-      const input = tf.browser.fromPixels(video)
-        .resizeBilinear([224, 224])
-        .toFloat()
-        .expandDims(0);
-
-      const output = model.predict(input);
-      const data = await output.data();
-      const index = data.indexOf(Math.max(...data));
-      const letter = String.fromCharCode(65 + index); // A-Z
-      document.getElementById('prediction').innerText = `Detected Sign: ${letter}`;
-      input.dispose();
-      requestAnimationFrame(() => predictLoop(video));
-    }
-
     async function main() {
-      await loadModel();
-      const video = await setupCamera();
-      predictLoop(video);
+      try {
+        await loadModel();
+        await setupCamera();
+        document.getElementById('status').innerText = 'Camera started';
+      } catch (err) {
+        document.getElementById('status').innerText = 'Error: ' + err;
+        console.error(err);
+      }
     }
 
     main();
