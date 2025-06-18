@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Live Sign Language Detection</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-tflite"></script>
@@ -10,80 +10,84 @@
     body {
       font-family: Arial, sans-serif;
       text-align: center;
+      background: #f4f4f4;
       margin: 0;
       padding: 0;
-      background: #f3f3f3;
     }
     header {
       background-color: #6200ea;
       color: white;
       padding: 1rem;
-      font-size: 1.5rem;
+      font-size: 1.4rem;
     }
     #container {
-      padding: 1rem;
+      margin-top: 1rem;
     }
     video {
       border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      margin-top: 1rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     }
     #prediction {
-      margin-top: 1rem;
       font-size: 2rem;
-      color: #333;
+      margin-top: 1rem;
       font-weight: bold;
+      color: #333;
     }
     footer {
       margin-top: 2rem;
-      font-size: 0.9rem;
-      color: #aaa;
+      font-size: 0.8rem;
+      color: #999;
     }
   </style>
 </head>
 <body>
-  <header>Sign Language Live Detection</header>
+  <header>🧠 Sign Language Detection (A–Z)</header>
+
   <div id="container">
-    <video id="webcam" autoplay playsinline width="320" height="240"></video>
+    <video id="webcam" autoplay playsinline muted width="320" height="240"></video>
     <div id="prediction">Loading model...</div>
   </div>
-  <footer>
-    Powered by TensorFlow Lite in Web | Created for Tiiny
-  </footer>
+
+  <footer>Built with TensorFlow Lite + Webcam · Hosted on GitHub/Tiiny</footer>
 
   <script>
     let model;
 
     async function loadModel() {
-      model = await tflite.loadTFLiteModel('model.tflite');
+      const modelUrl = 'https://l3al3y.github.io/WEEBO/model.tflite';
+      model = await tflite.loadTFLiteModel(modelUrl);
       document.getElementById('prediction').innerText = 'Model loaded. Starting camera...';
     }
 
     async function setupCamera() {
-      const webcam = document.getElementById('webcam');
+      const video = document.getElementById('webcam');
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      webcam.srcObject = stream;
+      video.srcObject = stream;
       return new Promise((resolve) => {
-        webcam.onloadedmetadata = () => {
-          resolve(webcam);
-        };
+        video.onloadedmetadata = () => resolve(video);
       });
     }
 
     async function predictLoop(video) {
-      const inputTensor = tf.browser.fromPixels(video).resizeBilinear([224, 224]).toFloat().expandDims(0);
-      const output = model.predict(inputTensor);
-      const result = await output.data();
-      const labelIndex = result.indexOf(Math.max(...result));
-      const label = String.fromCharCode(65 + labelIndex); // A-Z
-      document.getElementById('prediction').innerText = `Detected Sign: ${label}`;
-      inputTensor.dispose();
+      const input = tf.browser.fromPixels(video)
+        .resizeBilinear([224, 224])
+        .toFloat()
+        .expandDims(0);
+
+      const output = model.predict(input);
+      const data = await output.data();
+      const index = data.indexOf(Math.max(...data));
+      const letter = String.fromCharCode(65 + index); // A-Z
+      document.getElementById('prediction').innerText = `Detected Sign: ${letter}`;
+      input.dispose();
       requestAnimationFrame(() => predictLoop(video));
     }
 
     async function main() {
       await loadModel();
-      const webcam = await setupCamera();
-      predictLoop(webcam);
+      const video = await setupCamera();
+      predictLoop(video);
     }
 
     main();
