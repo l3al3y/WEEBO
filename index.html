@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Test Camera + TFLite</title>
+  <title>Fix: TFLite Camera</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-tflite"></script>
 </head>
@@ -14,30 +14,28 @@
   <script>
     let model;
 
-    async function loadModel() {
-      document.getElementById('status').innerText = 'Loading model...';
-      model = await tflite.loadTFLiteModel('model.tflite', {
-        wasmPath: 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-tflite/dist/tfjs-tflite.wasm',
-      });
-      document.getElementById('status').innerText = 'Model loaded!';
-    }
-
-    async function setupCamera() {
-      const video = document.getElementById('webcam');
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      video.srcObject = stream;
-      return new Promise((resolve) => {
-        video.onloadedmetadata = () => resolve(video);
-      });
-    }
-
     async function main() {
+      const status = document.getElementById('status');
       try {
-        await loadModel();
-        await setupCamera();
-        document.getElementById('status').innerText = 'Camera started';
+        // 🔧 Load the WASM backend explicitly
+        await tflite.setWasmPaths({
+          'tfjs-tflite.wasm': 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-tflite/dist/tfjs-tflite.wasm'
+        });
+        await tf.setBackend('wasm');
+        await tf.ready();
+
+        status.innerText = 'WASM backend loaded, loading model...';
+
+        model = await tflite.loadTFLiteModel('model.tflite');
+        status.innerText = 'Model loaded. Starting camera...';
+
+        const video = document.getElementById('webcam');
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+
+        status.innerText = 'Camera started successfully!';
       } catch (err) {
-        document.getElementById('status').innerText = 'Error: ' + err;
+        status.innerText = 'Error: ' + err.message;
         console.error(err);
       }
     }
